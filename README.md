@@ -1,4 +1,4 @@
-# Talents 🎓
+# Talents
 
 Plataforma de Gestão de Aprendizagem (LMS) construída com **NestJS** e **React**.
 
@@ -27,10 +27,15 @@ Plataforma de Gestão de Aprendizagem (LMS) construída com **NestJS** e **React
 - pnpm ≥ 12
 - PostgreSQL ≥ 15
 
+## Contribuições
+
+- 
+
 ## Como Rodar
 
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/talents.git
+git clone https://github.com/willer-barros/talents-lms
 cd talents   
+

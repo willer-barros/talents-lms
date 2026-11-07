@@ -11,3 +11,229 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+enum Role{ 
+  ADMIN 
+  INSTRUCTOR
+  STUDENT
+  }
+
+enum CourseStatus{
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  }
+
+enum LessonType{
+  VIDEO
+  TEXT
+  PDF
+  QUIZ
+  }
+
+enum EnrollmentStatus{
+  ACTIVE
+  COMPLETED
+  }
+
+enum QuestionType{
+  SINGLE
+  MULTIPLE
+  }
+
+model Organization{
+  id String @id @default(uuid())
+  name String
+  logoUrl String?
+  primaryColor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User{
+  id String @id @default(uuid())
+  email String @unique
+  name String
+  passwordHash String
+  role Role @default(STUDENT)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coursesCreated Course[]
+  enrollments Enrollment[]
+  attempts QuizAttempt[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  familyId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Course {
+  id          String       @id @default(uuid())
+  title       String
+  slug        String       @unique
+  description String?
+  thumbnail   String?
+  status      CourseStatus @default(DRAFT)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  sections    Section[]
+  enrollments Enrollment[]
+
+  @@index([status])
+}
+
+model Section {
+  id       String @id @default(uuid())
+  courseId String
+  title    String
+  position Int
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id        String     @id @default(uuid())
+  sectionId String
+  title     String
+  type      LessonType
+  position  Int
+  content   String?    
+  videoUrl  String?   
+  fileKey   String?   
+
+  section  Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  quiz     Quiz?
+  progress LessonProgress[]
+
+  @@index([sectionId, position])
+}
+
+model Quiz {
+  id           String @id @default(uuid())
+  lessonId     String @unique
+  passingScore Int    @default(70)
+  maxAttempts  Int?
+
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+}
+
+model Question {
+  id       String       @id @default(uuid())
+  quizId   String
+  text     String
+  type     QuestionType @default(SINGLE)
+  position Int
+
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options Option[]
+
+  @@index([quizId, position])
+}
+
+model Option {
+  id         String  @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id          String    @id @default(uuid())
+  quizId      String
+  userId      String
+  score       Int?
+  passed      Boolean?
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  quiz    Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers AttemptAnswer[]
+
+  @@index([quizId, userId])
+}
+
+model AttemptAnswer {
+  id                String   @id @default(uuid())
+  attemptId         String
+  questionId        String
+  selectedOptionIds String[]
+
+  attempt QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model Enrollment {
+  id          String           @id @default(uuid())
+  userId      String
+  courseId    String
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    LessonProgress[]
+  certificate Certificate?
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id           String   @id @default(uuid())
+  enrollmentId String
+  lessonId     String
+  completedAt  DateTime @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+}
+
+model Certificate {
+  id           String   @id @default(uuid())
+  enrollmentId String   @unique
+  code         String   @unique
+  fileKey      String?
+  issuedAt     DateTime @default(now())
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
