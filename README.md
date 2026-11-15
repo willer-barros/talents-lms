@@ -29,7 +29,8 @@ Plataforma de Gestão de Aprendizagem (LMS) construída com **NestJS** e **React
 
 ## Contribuições
 
-- 
+- Crie um fork do repositorio 
+- Mande seu PR
 
 ## Como Rodar
 
